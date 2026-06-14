@@ -21,6 +21,7 @@ from simulation.events import (
     tick_cultural_drift,
     tick_optimism,
 )
+from simulation.genetics import spawn_child
 from simulation.resources import tick_resources
 from simulation.world import Building, WorldState
 from ui.charts import (
@@ -94,7 +95,7 @@ def _event_html(event: str, year: float) -> str:
     return (
         f'<div style="border-left:2px solid {border};padding:4px 9px;margin:3px 0;'
         f"font-family:'Space Mono',monospace;font-size:9px;line-height:1.5\">"
-        f'<span style="color:#334455;font-size:8px">Yr {year:.2f} </span>'
+        f'<span style="color:#6a8fa0;font-size:8px">Yr {year:.2f} </span>'
         f'<span style="color:{color}">{event}</span>'
         f"</div>"
     )
@@ -184,6 +185,32 @@ async def advance_tick() -> list[str]:
             )
         _state.year_had_crisis = False
 
+    # Birth: ~0.3% chance per tick when 2+ adults present — uses genetic algorithm
+    adults = [c for c in _state.living if c.age >= 22]
+    if len(adults) >= 2 and random.random() < 0.003:
+        parent_a, parent_b = random.sample(adults, 2)
+        cultural_bias = list(_state.get_cultural_profile().keys())
+        child_id = f"c{len(_state.population):03d}"
+        child = spawn_child(parent_a, parent_b, child_id, cultural_bias)
+        _state.population.append(child)
+        resource_events.append(
+            f"🌟 Birth: {child.name} born to {parent_a.name} & "
+            f"{parent_b.name} (Generation {child.generation})"
+        )
+        milestone_tasks.append(
+            milestone_chronicle(
+                _state,
+                "birth",
+                {
+                    "parent_a_name": parent_a.name,
+                    "parent_a_job": parent_a.job,
+                    "parent_b_name": parent_b.name,
+                    "parent_b_job": parent_b.job,
+                    "generation": child.generation,
+                },
+            )
+        )
+
     actors = random.sample(_state.living, min(3, len(_state.living)))
     agent_coros = [get_agent_action(c, _state) for c in actors]
 
@@ -214,14 +241,16 @@ async def advance_tick() -> list[str]:
 
 # ─── UI state builders ─────────────────────────────────────────────────────────
 def _build_ui(feed_html: list[str]) -> tuple:
+    _profile_html = render_colonist_profile(
+        next((c for c in _state.population if c.id == _selected_colonist_id), None),
+        _state.get_cultural_profile(),
+    )
     return (
         render_map(_state, _selected_colonist_id),
         render_roster(_state.population, _selected_colonist_id),
+        _profile_html,  # profile_left_out
         render_hud(_state),
-        render_colonist_profile(
-            next((c for c in _state.population if c.id == _selected_colonist_id), None),
-            _state.get_cultural_profile(),
-        ),
+        _profile_html,  # profile_out (same content)
         _render_feed(feed_html),
         render_all_chronicles(_state.chronicle),
         feed_html,
@@ -273,6 +302,44 @@ async def on_optimism(feed_html: list[str]) -> tuple:
     else:
         full_msg = msg
     feed_html = [_event_html(f"💡 {full_msg}", _state.year)] + feed_html
+    return _build_ui(feed_html)
+
+
+async def on_fast_forward_year(feed_html: list[str]) -> tuple:
+    """Fast-forward a full colony year (52 weeks) with random crises/breakthroughs injected."""
+    weeks_in_year = 52
+    # Schedule 1-3 crises and 0-2 breakthroughs at random weeks during the year
+    crisis_weeks = set(random.sample(range(weeks_in_year), k=random.randint(1, 3)))
+    breakthrough_weeks = set(
+        random.sample(range(weeks_in_year), k=random.randint(0, 2))
+    )
+
+    for week in range(weeks_in_year):
+        if week in crisis_weeks and _state.living:
+            msg = inject_manual_crisis(_state)
+            _state.year_had_crisis = True
+            feed_html = [_event_html(f"💥 {msg}", _state.year)] + feed_html
+
+        if week in breakthrough_weeks and not _state.optimism_active and _state.living:
+            msg, bt = inject_optimism(_state)
+            if bt:
+                flavor = await generate_breakthrough_flavor(_state, bt)
+                full_msg = msg + "\n\n" + flavor
+                proposer = next(
+                    (c.name for c in _state.living if c.job == "researcher"),
+                    _state.living[0].name if _state.living else "a colonist",
+                )
+                await milestone_chronicle(
+                    _state, "breakthrough", {"title": bt.title, "proposer": proposer}
+                )
+            else:
+                full_msg = msg
+            feed_html = [_event_html(f"💡 {full_msg}", _state.year)] + feed_html
+
+        events = await advance_tick()
+        new_items = [_event_html(e, _state.year) for e in events]
+        feed_html = new_items + feed_html
+
     return _build_ui(feed_html)
 
 
@@ -448,13 +515,19 @@ label, .label-wrap span {
 #controls-row { padding: 8px 0 4px !important; gap: 8px !important; }
 
 /* ── Ensure HTML content inherits dark-theme colour ──────────────────────── */
-.prose, .prose p, .prose div { color: var(--text) !important; }
+.prose, .prose p { color: var(--text) !important; }
+
+/* ── Title sunshine animation ─────────────────────────────────────────────── */
+@keyframes sunshine-sweep {
+  0%, 100% { background-position: 0% center;   filter: drop-shadow(0 0 22px rgba(255,180,0,0.38)); }
+  50%       { background-position: 150% center; filter: drop-shadow(0 0 44px rgba(255,210,0,0.72)); }
+}
 """
 
 TITLE_HTML = """
 <div style="text-align:center;padding:22px 0 16px;font-family:'Space Mono',monospace;
             border-bottom:1px solid #0d1830;background:linear-gradient(to bottom,#080e1e,#010409);
-            position:relative">
+            position:relative;overflow:hidden">
   <div style="position:absolute;left:20px;top:18px;color:#4a7a9b;font-size:8px;
               letter-spacing:2px;line-height:1.8">
     AUBE-NOVA-SIM<br/>
@@ -465,8 +538,44 @@ TITLE_HTML = """
     <span style="color:#4a7a9b">PROTOCOL: </span><span style="color:#00cc88">ACTIVE</span><br/>
     <span style="color:#4a7a9b">MODEL: </span><span style="color:#4488ff">MiniCPM4.1-8B</span>
   </div>
-  <div style="font-size:44px;letter-spacing:14px;color:#00cc88;font-weight:700;
-              text-shadow:0 0 40px rgba(0,204,136,0.35)">AUBE NOVA</div>
+  <!-- Sunshine title with animated gradient and sun rays -->
+  <div style="position:relative;display:inline-block">
+    <svg style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+                width:500px;height:110px;overflow:visible;pointer-events:none"
+         viewBox="0 0 500 110" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="sun-halo" cx="50%" cy="50%" r="50%">
+          <stop offset="0%"   stop-color="#ffd700" stop-opacity="0.22"/>
+          <stop offset="100%" stop-color="#ffd700" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <ellipse cx="250" cy="55" rx="230" ry="48" fill="url(#sun-halo)">
+        <animate attributeName="rx" values="215;240;215" dur="3s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="0.55;1;0.55" dur="3s" repeatCount="indefinite"/>
+      </ellipse>
+      <g transform="translate(250,55)">
+        <animate attributeName="opacity" values="0.12;0.26;0.12" dur="4s" repeatCount="indefinite"/>
+        <line x1="0" y1="0" x2="-235" y2="-40" stroke="#ffd700" stroke-width="1.2"/>
+        <line x1="0" y1="0" x2="-235" y2="0"   stroke="#ff8800" stroke-width="0.9"/>
+        <line x1="0" y1="0" x2="-235" y2="40"  stroke="#ffd700" stroke-width="1.2"/>
+        <line x1="0" y1="0" x2="235"  y2="-40" stroke="#ffd700" stroke-width="1.2"/>
+        <line x1="0" y1="0" x2="235"  y2="0"   stroke="#ff8800" stroke-width="0.9"/>
+        <line x1="0" y1="0" x2="235"  y2="40"  stroke="#ffd700" stroke-width="1.2"/>
+        <line x1="0" y1="0" x2="-135" y2="-56" stroke="#ffaa00" stroke-width="0.7"/>
+        <line x1="0" y1="0" x2="135"  y2="-56" stroke="#ffaa00" stroke-width="0.7"/>
+        <line x1="0" y1="0" x2="-135" y2="56"  stroke="#ffaa00" stroke-width="0.7"/>
+        <line x1="0" y1="0" x2="135"  y2="56"  stroke="#ffaa00" stroke-width="0.7"/>
+      </g>
+    </svg>
+    <div style="font-size:44px;letter-spacing:14px;font-weight:700;
+                background:linear-gradient(90deg,#ffd700,#ff8800,#ff4c00,#ffd700,#00cc88,#ffd700);
+                background-size:300% auto;
+                -webkit-background-clip:text;
+                -webkit-text-fill-color:transparent;
+                background-clip:text;
+                animation:sunshine-sweep 4s ease-in-out infinite;
+                position:relative">AUBE NOVA</div>
+  </div>
   <div style="font-size:10px;color:#5a9ab8;letter-spacing:3px;margin-top:7px">
     HUMANITY'S FIRST AUTONOMOUS EXTRATERRESTRIAL COLONY · POWERED BY SMALL LANGUAGE MODELS
   </div>
@@ -492,6 +601,7 @@ with gr.Blocks(title="Aube Nova") as demo:
         with gr.Column(scale=6, elem_id="col-map"):
             map_out = gr.HTML(label="COLONY MAP")
             roster_out = gr.HTML(label="COLONISTS")
+            profile_left_out = gr.HTML()
 
         # Middle: tabbed feed / chronicle / analytics
         with gr.Column(scale=5, elem_id="col-feed"):
@@ -516,7 +626,8 @@ with gr.Blocks(title="Aube Nova") as demo:
     gr.HTML(CONTROLS_LABEL)
     with gr.Row(elem_id="controls-row"):
         tick_btn = gr.Button("▶ ADVANCE WEEK", variant="primary", scale=2)
-        ff_btn = gr.Button("⏩ FAST-FORWARD 10W", variant="primary", scale=2)
+        ff_btn = gr.Button("⏩ FF 10 WEEKS", variant="primary", scale=2)
+        ff_year_btn = gr.Button("🗓️ FF 1 YEAR", variant="primary", scale=2)
         crisis_btn = gr.Button("💥 INJECT CRISIS", variant="stop", scale=1)
         optimism_btn = gr.Button("💡 BREAKTHROUGH", variant="secondary", scale=2)
         reset_btn = gr.Button("↺ NEW COLONY", scale=1)
@@ -532,6 +643,7 @@ with gr.Blocks(title="Aube Nova") as demo:
     ALL_OUT = [
         map_out,
         roster_out,
+        profile_left_out,  # NEW
         hud_out,
         profile_out,
         feed_out,
@@ -546,6 +658,7 @@ with gr.Blocks(title="Aube Nova") as demo:
     # ── Wire up events ─────────────────────────────────────────────────────────
     tick_btn.click(on_tick, [feed_state], ALL_OUT)
     ff_btn.click(on_fast_forward, [feed_state], ALL_OUT)
+    ff_year_btn.click(on_fast_forward_year, [feed_state], ALL_OUT)
     crisis_btn.click(on_crisis, [feed_state], ALL_OUT)
     optimism_btn.click(on_optimism, [feed_state], ALL_OUT)
     reset_btn.click(on_reset, [feed_state], ALL_OUT)
