@@ -47,7 +47,7 @@ def _render_annual(entry: dict) -> str:
     col1 = (
         (
             f"<div style=\"font-family:'Source Serif 4',Georgia,serif;"
-            f'font-size:12px;line-height:1.8;color:#2a1f1a">'
+            f'font-size:12px;line-height:1.8;color:#1a1008">'
             f"{art1}"
             f"</div>"
         )
@@ -58,7 +58,7 @@ def _render_annual(entry: dict) -> str:
     col2 = (
         (
             f"<div style=\"font-family:'Source Serif 4',Georgia,serif;"
-            f"font-size:11px;line-height:1.75;color:#3a2a20;font-style:italic;"
+            f"font-size:11px;line-height:1.75;color:#2a1810;font-style:italic;"
             f'border-left:3px solid #c9893d;padding-left:14px">'
             f"{art2}"
             f"</div>"
@@ -89,12 +89,12 @@ def _render_annual(entry: dict) -> str:
   <div style="text-align:center;padding-bottom:10px;margin-bottom:10px;
               border-bottom:3px double #1a1410">
     <div style="font-family:'IM Fell English',Georgia,serif;
-                font-size:26px;color:#1a1410;letter-spacing:1px;
+                font-size:26px;letter-spacing:1px;
                 line-height:1.15">
-      The Aube Chronicle
+      <span style="color:#0d0d0a !important;font-weight:900">The Aube Chronicle</span>
     </div>
     <div style="font-family:'Space Mono',monospace;font-size:7px;
-                color:#7a6a5a;letter-spacing:3px;margin-top:5px;
+                color:#5a4a3a !important;letter-spacing:3px;margin-top:5px;
                 text-transform:uppercase">
       Humanity's First Record &nbsp;&middot;&nbsp; Colony Year {year}
     </div>
@@ -103,7 +103,7 @@ def _render_annual(entry: dict) -> str:
   <!-- Headline -->
   <div style="font-family:'Playfair Display',Georgia,serif;
               font-size:21px;font-weight:900;line-height:1.2;
-              color:#1a1410;text-align:center;
+              color:#0d0d0a !important;text-align:center;
               padding-bottom:12px;margin-bottom:4px;
               border-bottom:1px solid #c9893d">
     {hed}
