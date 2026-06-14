@@ -1,0 +1,34 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Env files
+.env
+
+# Agent guidelines (local only)
+guidelines/
+
+# Audio cache (session-generated, never committed)
+audio_cache/
+*.wav
+
+# Test / IDE cache
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.DS_Store
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Model weights (loaded from Hub at runtime)
+*.bin
+*.safetensors
+*.gguf
