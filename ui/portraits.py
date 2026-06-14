@@ -1,6 +1,6 @@
 """
 Procedural SVG portrait generator for Aube Nova colonists.
-Each portrait is 60×80px, deterministic based on colonist.id.
+Each portrait is 80×108px, deterministic based on colonist.id.
 """
 
 from __future__ import annotations
@@ -56,7 +56,7 @@ EYE_COLORS = [
 
 
 def render_portrait(colonist: Colonist, selected: bool = False) -> str:
-    """Return a 60×80 inline SVG string for this colonist."""
+    """Return an 80×108 inline SVG string for this colonist."""
     seed = abs(hash(colonist.id))
 
     bg, accent, job_abbr = JOB_COLORS.get(colonist.job, ("#0a0a1a", "#00ff9d", "COL"))
@@ -128,7 +128,7 @@ def render_portrait(colonist: Colonist, selected: bool = False) -> str:
     uid = colonist.id.replace(":", "_")
 
     return (
-        f'<svg width="60" height="80" viewBox="0 0 60 80" '
+        f'<svg width="80" height="108" viewBox="0 0 60 80" '
         f'xmlns="http://www.w3.org/2000/svg" {svg_style}>'
         f"<defs>"
         f'<radialGradient id="pbg-{uid}" cx="40%" cy="25%" r="75%">'
@@ -189,83 +189,121 @@ def render_roster(colonists: list[Colonist], selected_id: str | None = None) -> 
     """Horizontal scrollable row of portrait cards."""
     js = """
 <script>
-if (!window._aubeRosterInit) {
-  window._aubeRosterInit = true;
+// Always (re)define these globals — they are pure functions, safe to overwrite.
+window.aubeSelectColonist = function(cid) {
+  var el = document.querySelector('#colonist-selector textarea');
+  if (!el) el = document.querySelector('#colonist-selector input');
+  if (el) {
+    try {
+      var setter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value').set;
+      setter.call(el, cid);
+    } catch(ex) { el.value = cid; }
+    el.dispatchEvent(new Event('input', {bubbles: true}));
+  }
+};
 
-  window.aubeSelectColonist = function(cid) {
-    var el = document.querySelector('#colonist-selector textarea');
-    if (!el) el = document.querySelector('#colonist-selector input');
-    if (el) {
-      try {
-        var setter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value').set;
-        setter.call(el, cid);
-      } catch(e) { el.value = cid; }
-      el.dispatchEvent(new Event('input', {bubbles: true}));
-    }
-  };
-
-  window.aubeShowTip = function(e, card) {
-    var tip = document.getElementById('aube-tip');
-    if (!tip) {
-      tip = document.createElement('div');
-      tip.id = 'aube-tip';
-      tip.style.cssText = [
-        'position:fixed','z-index:99999','pointer-events:none',
-        'background:#0a1322','border:1px solid #1e3a52',
-        'border-radius:8px','padding:11px 13px',
-        "font-family:'Space Mono',monospace",
-        'min-width:190px','max-width:240px',
-        'box-shadow:0 4px 20px rgba(0,0,0,0.7)',
-        'display:none'
-      ].join(';');
-      document.body.appendChild(tip);
-    }
-    var d = card.dataset;
-    var hp = parseFloat(d.health), mp = parseFloat(d.morale);
-    var hc = hp > 60 ? '#00cc88' : hp > 30 ? '#ffd700' : '#ff4444';
-    var mc = mp > 60 ? '#cc44ff' : mp > 30 ? '#ffd700' : '#ff8844';
-    var traits = d.traits ? d.traits.split(',') : [];
-    var tHTML = traits.map(function(t) {
-      return '<span style="display:inline-block;padding:1px 6px;margin:1px 2px;font-size:7px;'
-           + 'border-radius:9px;background:#0e1e2e;border:1px solid #1a3a4a;color:#5a9ab8">'
-           + t + '</span>';
-    }).join('');
-    var aliveHTML = d.alive === '1'
-      ? '<span style="color:#00cc88">ACTIVE</span>'
-      : '<span style="color:#ff4444">DECEASED</span>';
-    tip.innerHTML =
-      '<div style="font-size:13px;font-weight:700;color:' + d.accent + ';margin-bottom:1px">' + d.name + '</div>' +
-      '<div style="font-size:8px;color:#3a5a72;margin-bottom:7px">' + d.job.toUpperCase() + ' \u00b7 AGE ' + d.age + ' \u00b7 ' + aliveHTML + '</div>' +
-      '<div style="font-size:7px;color:#2a4a5a;display:flex;justify-content:space-between;margin-bottom:2px">' +
-        '<span>HEALTH</span><span style="color:' + hc + '">' + hp.toFixed(0) + '%</span>' +
-      '</div>' +
-      '<div style="background:#0c1620;border-radius:2px;height:4px;margin-bottom:5px">' +
-        '<div style="width:' + hp + '%;height:4px;background:' + hc + ';border-radius:2px;box-shadow:0 0 5px ' + hc + '66"></div>' +
-      '</div>' +
-      '<div style="font-size:7px;color:#2a4a5a;display:flex;justify-content:space-between;margin-bottom:2px">' +
-        '<span>MORALE</span><span style="color:' + mc + '">' + mp.toFixed(0) + '%</span>' +
-      '</div>' +
-      '<div style="background:#0c1620;border-radius:2px;height:4px;margin-bottom:8px">' +
-        '<div style="width:' + mp + '%;height:4px;background:' + mc + ';border-radius:2px;box-shadow:0 0 5px ' + mc + '66"></div>' +
-      '</div>' +
-      '<div style="border-top:1px solid #0e1e2e;padding-top:7px">' + tHTML + '</div>';
-
-    var rect = card.getBoundingClientRect();
-    var left = rect.right + 10;
-    var top  = rect.top;
-    if (left + 250 > window.innerWidth)  left = rect.left - 250;
-    if (top  + 200 > window.innerHeight) top  = window.innerHeight - 205;
-    if (top < 4) top = 4;
-    tip.style.left = left + 'px';
-    tip.style.top  = top  + 'px';
-    tip.style.display = 'block';
-  };
-
-  window.aubeHideTip = function() {
-    var tip = document.getElementById('aube-tip');
-    if (tip) tip.style.display = 'none';
-  };
+// getAttribute wrapper — works for both HTML elements and SVG elements.
+function _aubeAttr(el, name) {
+  return el.getAttribute('data-' + name) || '';
 }
+
+window.aubeShowTip = function(e, card) {
+  var tip = document.getElementById('aube-tip');
+  if (!tip) {
+    tip = document.createElement('div');
+    tip.id = 'aube-tip';
+    tip.style.cssText = [
+      'position:fixed','z-index:99999','pointer-events:none',
+      'background:#0a1322','border:1px solid #1e3a52',
+      'border-radius:8px','padding:11px 13px',
+      "font-family:'Space Mono',monospace",
+      'min-width:190px','max-width:240px',
+      'box-shadow:0 4px 20px rgba(0,0,0,0.7)',
+      'display:none'
+    ].join(';');
+    document.body.appendChild(tip);
+  }
+  var name    = _aubeAttr(card, 'name');
+  var job     = _aubeAttr(card, 'job');
+  var age     = _aubeAttr(card, 'age');
+  var health  = _aubeAttr(card, 'health');
+  var morale  = _aubeAttr(card, 'morale');
+  var traits  = _aubeAttr(card, 'traits');
+  var accent  = _aubeAttr(card, 'accent') || '#00ff9d';
+  var alive   = _aubeAttr(card, 'alive');
+
+  var hp = parseFloat(health) || 0;
+  var mp = parseFloat(morale) || 0;
+  var hc = hp > 60 ? '#00cc88' : hp > 30 ? '#ffd700' : '#ff4444';
+  var mc = mp > 60 ? '#cc44ff' : mp > 30 ? '#ffd700' : '#ff8844';
+  var traitList = traits ? traits.split(',').filter(Boolean) : [];
+  var tHTML = traitList.map(function(t) {
+    return '<span style="display:inline-block;padding:1px 6px;margin:1px 2px;font-size:7px;'
+         + 'border-radius:9px;background:#0e1e2e;border:1px solid #1a3a4a;color:#5a9ab8">'
+         + t + '</span>';
+  }).join('');
+  var aliveHTML = alive === '1'
+    ? '<span style="color:#00cc88">ACTIVE</span>'
+    : '<span style="color:#ff4444">DECEASED</span>';
+  tip.innerHTML =
+    '<div style="font-size:13px;font-weight:700;color:' + accent + ';margin-bottom:1px">' + name + '</div>' +
+    '<div style="font-size:8px;color:#7a9ab8;margin-bottom:7px">' + job.toUpperCase() + ' \u00b7 AGE ' + age + ' \u00b7 ' + aliveHTML + '</div>' +
+    '<div style="font-size:7px;color:#8ab4c8;display:flex;justify-content:space-between;margin-bottom:2px">' +
+      '<span>HEALTH</span><span style="color:' + hc + '">' + hp.toFixed(0) + '%</span>' +
+    '</div>' +
+    '<div style="background:#0c1620;border-radius:2px;height:4px;margin-bottom:5px">' +
+      '<div style="width:' + hp + '%;height:4px;background:' + hc + ';border-radius:2px;box-shadow:0 0 5px ' + hc + '66"></div>' +
+    '</div>' +
+    '<div style="font-size:7px;color:#8ab4c8;display:flex;justify-content:space-between;margin-bottom:2px">' +
+      '<span>MORALE</span><span style="color:' + mc + '">' + mp.toFixed(0) + '%</span>' +
+    '</div>' +
+    '<div style="background:#0c1620;border-radius:2px;height:4px;margin-bottom:8px">' +
+      '<div style="width:' + mp + '%;height:4px;background:' + mc + ';border-radius:2px;box-shadow:0 0 5px ' + mc + '66"></div>' +
+    '</div>' +
+    '<div style="border-top:1px solid #0e1e2e;padding-top:7px">' + tHTML + '</div>';
+
+  var rect = card.getBoundingClientRect();
+  var tipW = 240;
+  var left = rect.right + 12;
+  var top  = rect.top;
+  if (left + tipW > window.innerWidth)  left = rect.left - tipW - 12;
+  if (top  + 210 > window.innerHeight) top  = window.innerHeight - 215;
+  if (top < 4) top = 4;
+  tip.style.left = left + 'px';
+  tip.style.top  = top  + 'px';
+  tip.style.display = 'block';
+};
+
+window.aubeHideTip = function() {
+  var tip = document.getElementById('aube-tip');
+  if (tip) tip.style.display = 'none';
+};
+
+// ── Map token hover: zoom via SVG attribute (CSS transform would override translate) ──
+window.aubeMapEnter = function(outer) {
+  // Zoom: modify the translate group's transform attribute to include scale()
+  var g = outer.querySelector('g[data-tx]');
+  if (g) {
+    var tx = g.getAttribute('data-tx');
+    var ty = g.getAttribute('data-ty');
+    // scale(1.28) in the local space of the translated origin = zoom around token center
+    g.setAttribute('transform', 'translate(' + tx + ',' + ty + ') scale(1.28)');
+    g.style.filter = 'brightness(1.35) drop-shadow(0 0 9px rgba(255,210,80,0.7))';
+  }
+  // Profile card tooltip
+  window.aubeShowTip(null, outer);
+};
+
+window.aubeMapLeave = function(outer) {
+  var g = outer.querySelector('g[data-tx]');
+  if (g) {
+    var tx = g.getAttribute('data-tx');
+    var ty = g.getAttribute('data-ty');
+    g.setAttribute('transform', 'translate(' + tx + ',' + ty + ')');
+    g.style.filter = '';
+  }
+  window.aubeHideTip();
+};
 </script>
 """
     cards = ""
@@ -279,8 +317,6 @@ if (!window._aubeRosterInit) {
         alive_flag = "1" if c.alive else "0"
         cards += (
             f"<div onclick=\"window.aubeSelectColonist('{c.id}')\" "
-            f'onmouseover="window.aubeShowTip(event,this)" '
-            f'onmouseout="window.aubeHideTip()" '
             f'data-name="{c.name}" '
             f'data-job="{c.job}" '
             f'data-age="{c.age}" '
@@ -290,16 +326,21 @@ if (!window._aubeRosterInit) {
             f'data-accent="{accent}" '
             f'data-alive="{alive_flag}" '
             f'style="cursor:pointer;flex-shrink:0;border-radius:6px;{dead_style}{glow}'
-            f'transition:all 0.2s ease">'
+            f'transition:transform 0.18s ease,box-shadow 0.18s ease">'
             f"{portrait_svg}"
             f"</div>"
         )
 
+    # Nested wrapper: outer div scrolls horizontally, inner flex div has overflow:visible
+    # so portrait cards can scale on hover without being clipped.
     return (
         f"{js}"
-        f'<div style="display:flex;gap:6px;overflow-x:auto;padding:10px 12px;'
-        f"background:#060b14;border-radius:8px;border:1px solid #1a1f2e;"
+        f'<div style="overflow-x:auto;overflow-y:visible;background:#060b14;'
+        f"border-radius:8px;border:1px solid #1a1f2e;"
         f'scrollbar-width:thin;scrollbar-color:#1f2937 transparent">'
+        f'<div style="display:flex;gap:6px;padding:10px 12px 18px;'
+        f'overflow:visible;min-width:max-content">'
         f"{cards}"
+        f"</div>"
         f"</div>"
     )
