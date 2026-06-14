@@ -1,14 +1,18 @@
 """
-Chronicle narration via VoxCPM2 (OpenBMB).
-Converts Chronicle text entries to spoken audio using a consistent
-"archive computer" narrator voice via Voice Design.
+Chronicle narration via TTS.
 
-Falls back gracefully if VoxCPM2 is unavailable (CPU-only environments).
+Local: tries the installed voxcpm package (openbmb/VoxCPM2 from HF Hub) first;
+       falls back to gTTS when the model or GPU is unavailable.
+HF Space: same code path — `VoxCPM.from_pretrained("openbmb/VoxCPM2")` loads
+          directly from https://huggingface.co/openbmb/VoxCPM2 at runtime.
 """
 
 import logging
 import os
 from pathlib import Path
+
+# True when running inside a Hugging Face Space
+_IS_HF_SPACE = bool(os.environ.get("SPACE_ID"))
 
 logger = logging.getLogger(__name__)
 
@@ -20,45 +24,35 @@ NARRATOR_VOICE_DESCRIPTION = (
     "unhurried pace, no emotional inflection)"
 )
 
-_model = None
+_voxcpm_model = None
 _first_narration_path: Path | None = None
 
 
-def _get_model():
-    """Lazy-load VoxCPM2. Loaded once, reused across calls."""
-    global _model
-    if _model is None:
+def _get_voxcpm_model():
+    """Lazy-load VoxCPM2. Loaded once, reused across calls.
+
+    Both locally and on HF Space, the model is fetched from
+    https://huggingface.co/openbmb/VoxCPM2 via `from_pretrained`.
+    """
+    global _voxcpm_model
+    if _voxcpm_model is None:
         from voxcpm import VoxCPM
 
-        logger.info("Loading VoxCPM2...")
-        _model = VoxCPM.from_pretrained("openbmb/VoxCPM2", load_denoiser=False)
+        env_label = "HF Space" if _IS_HF_SPACE else "local"
+        logger.info("Loading VoxCPM2 (openbmb/VoxCPM2) in %s environment...", env_label)
+        _voxcpm_model = VoxCPM.from_pretrained("openbmb/VoxCPM2", load_denoiser=False)
         logger.info("VoxCPM2 loaded.")
-    return _model
+    return _voxcpm_model
 
 
-def narrate_chronicle(text: str, cache_key: str) -> str | None:
-    """
-    Generate spoken narration for a Chronicle entry.
-
-    Args:
-        text: The Chronicle text to narrate.
-        cache_key: Unique identifier for caching, e.g. "year_3" or "milestone_death_001".
-
-    Returns:
-        Path to the generated .wav file, or None if generation failed.
-    """
+def _narrate_with_voxcpm(text: str, cache_path: Path) -> bool:
+    """Try VoxCPM2 TTS. Returns True on success."""
     global _first_narration_path
-
-    cache_path = AUDIO_CACHE_DIR / f"{cache_key}.wav"
-    if cache_path.exists():
-        return str(cache_path)
-
     try:
         import soundfile as sf
 
-        model = _get_model()
+        model = _get_voxcpm_model()
 
-        # Use voice cloning from first narration for consistency; fall back to Voice Design
         if _first_narration_path and _first_narration_path.exists():
             wav = model.generate(
                 text=text,
@@ -75,17 +69,63 @@ def narrate_chronicle(text: str, cache_key: str) -> str | None:
             )
 
         if wav is None or len(wav) == 0:
-            logger.warning(f"VoxCPM2 returned empty audio for {cache_key}")
-            return None
+            return False
 
         sf.write(str(cache_path), wav, model.tts_model.sample_rate)
 
-        # Lock in the voice after first successful generation
         if _first_narration_path is None:
             _first_narration_path = cache_path
-
-        return str(cache_path)
+        return True
 
     except Exception as e:
-        logger.warning(f"Chronicle narration failed for {cache_key}: {e}")
-        return None
+        logger.debug(f"VoxCPM2 unavailable: {e}")
+        return False
+
+
+def _narrate_with_gtts(text: str, cache_path: Path) -> bool:
+    """Fallback TTS using gTTS (Google Text-to-Speech). Returns True on success."""
+    try:
+        from gtts import gTTS
+
+        tts = gTTS(text=text, lang="en", slow=False)
+        tts.save(str(cache_path))
+        return True
+
+    except Exception as e:
+        logger.debug(f"gTTS fallback failed: {e}")
+        return False
+
+
+def narrate_chronicle(text: str, cache_key: str) -> str | None:
+    """
+    Generate spoken narration for a Chronicle entry.
+    Tries VoxCPM2 first, then gTTS as fallback.
+
+    Args:
+        text: The Chronicle text to narrate.
+        cache_key: Unique key for caching, e.g. "year_3" or "milestone_death_001".
+
+    Returns:
+        Path to the generated audio file, or None if all TTS methods failed.
+    """
+    # Check cache (wav = VoxCPM2, mp3 = gTTS)
+    for ext in (".wav", ".mp3"):
+        cached = AUDIO_CACHE_DIR / f"{cache_key}{ext}"
+        if cached.exists():
+            return str(cached)
+
+    # Try VoxCPM2 first (WAV)
+    wav_path = AUDIO_CACHE_DIR / f"{cache_key}.wav"
+    if _narrate_with_voxcpm(text, wav_path):
+        return str(wav_path)
+
+    # Fallback to gTTS (MP3)
+    mp3_path = AUDIO_CACHE_DIR / f"{cache_key}.mp3"
+    if _narrate_with_gtts(text, mp3_path):
+        logger.info(f"gTTS narration saved: {mp3_path}")
+        return str(mp3_path)
+
+    logger.warning(
+        f"Chronicle narration failed for {cache_key}: all TTS methods unavailable"
+    )
+    return None
