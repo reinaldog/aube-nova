@@ -426,10 +426,22 @@ def _colonist_tokens(state: WorldState, selected_id: str | None) -> str:
                 "</circle>"
             )
 
+        traits_csv = ",".join(c.traits)
+        alive_flag = "1" if c.alive else "0"
         out.append(
-            f'<g data-cid="{c.id}" onclick="window.aubeSelectColonist(\'{c.id}\')" '
+            # outer group: click + hover handlers, data attributes for tooltip
+            f'<g data-cid="{c.id}" '
+            f'data-name="{c.name}" data-job="{c.job}" data-age="{c.age}" '
+            f'data-health="{c.health:.1f}" data-morale="{c.morale:.1f}" '
+            f'data-traits="{traits_csv}" data-accent="{accent}" '
+            f'data-alive="{alive_flag}" '
+            f"onclick=\"window.aubeSelectColonist('{c.id}')\" "
+            f'onmouseenter="if(window.aubeMapEnter)window.aubeMapEnter(this)" '
+            f'onmouseleave="if(window.aubeMapLeave)window.aubeMapLeave(this)" '
             f'style="cursor:pointer">'
-            f'<g transform="translate({cx},{cy})">'
+            # zoom target: translate group with coords stored as data attrs for JS zoom
+            f'<g transform="translate({cx},{cy})" data-tx="{cx}" data-ty="{cy}">'
+            # animation group
             f"<g>"
             f'<animateTransform attributeName="transform" type="translate" '
             f'values="0,0;{dx},{dy};0,0;{-dx},{-dy};0,0" '
@@ -456,10 +468,10 @@ def _colonist_tokens(state: WorldState, selected_id: str | None) -> str:
             f'<rect x="5" y="-24" width="16" height="8" rx="2" fill="{accent}" opacity="0.95"/>'
             f'<text x="13" y="-18" font-family="Space Mono,monospace" font-size="5.5" '
             f'text-anchor="middle" fill="black" font-weight="bold">{job_abbr}</text>'
-            # tooltip
+            # tooltip (native SVG, also visible as browser tooltip)
             f"<title>{c.name} · {c.job.upper()} · HP:{c.health:.0f}% · MRL:{c.morale:.0f}%</title>"
             f"</g>"  # animation group
-            f"</g>"  # translate group
+            f"</g>"  # translate / zoom-target group
             f"</g>"  # click group
         )
     return "".join(out)
@@ -498,8 +510,8 @@ def render_map(state: WorldState, selected_colonist_id: str | None = None) -> st
     tunnels = _resource_tunnels(state)
     tokens = _colonist_tokens(state, selected_colonist_id)
 
-    return f"""<svg viewBox="0 0 800 560" xmlns="http://www.w3.org/2000/svg"
-     style="width:100%;border-radius:10px;display:block">
+    return f"""<svg viewBox="80 20 650 510" xmlns="http://www.w3.org/2000/svg"
+     style="width:100%;min-height:420px;border-radius:10px;display:block">
   <defs>
     <radialGradient id="space-bg" cx="50%" cy="40%" r="70%">
       <stop offset="0%" stop-color="#05091a"/>
