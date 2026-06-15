@@ -112,10 +112,25 @@ def tick_resources(state: WorldState) -> list[str]:
 
     # Clear resolved crises
     if state.crisis_active:
-        res_name = state.crisis_active.replace("_critical", "")
-        if state.resources.get(res_name, 100) > 30:
-            events.append(f"✅ {res_name.upper()} crisis resolved.")
-            state.crisis_active = None
+        if state.crisis_active.endswith("_critical"):
+            # Resource-level critical warnings: clear when resource recovers
+            res_name = state.crisis_active.replace("_critical", "")
+            if state.resources.get(res_name, 100) > 30:
+                events.append(f"✅ {res_name.upper()} crisis resolved.")
+                state.crisis_active = None
+                state.crisis_duration_remaining = 0
+        else:
+            # Named crises (food_blight, oxygen_failure, etc.): expire after duration
+            state.crisis_duration_remaining = max(
+                0, state.crisis_duration_remaining - 1
+            )
+            if state.crisis_duration_remaining <= 0:
+                # Restore any strained buildings when the crisis ends
+                for b in state.buildings:
+                    if b.status == "strained":
+                        b.status = "operational"
+                        events.append(f"✅ {b.name} fully restored to operation.")
+                state.crisis_active = None
 
     # Annual aging (at year boundary)
     if state.tick > 0 and state.tick % 52 == 0:

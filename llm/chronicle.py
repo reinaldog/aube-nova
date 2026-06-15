@@ -1,4 +1,5 @@
 import logging
+import re
 
 from llm.client import call_llm
 from llm.narration import narrate_chronicle
@@ -177,9 +178,17 @@ async def milestone_chronicle(
             narration_text = f"{headline}. {article1}"
         else:
             narration_text = headline
-        entry["audio_path"] = narrate_chronicle(
-            narration_text, f"milestone_{event_type}_{state.year_int}"
-        )
+        if event_type == "death":
+            safe_name = re.sub(r"[^a-z0-9]", "_", (context.get("name") or "").lower())
+            cache_key = f"milestone_death_{safe_name}"
+        elif event_type == "birth":
+            safe_name = re.sub(
+                r"[^a-z0-9]", "_", (context.get("parent_a_name") or "").lower()
+            )
+            cache_key = f"milestone_birth_{state.year_int}_{safe_name}"
+        else:
+            cache_key = f"milestone_{event_type}_{state.year_int}"
+        entry["audio_path"] = narrate_chronicle(narration_text, cache_key)
     except Exception as _narration_err:
         logger.warning(f"Milestone narration hook failed: {_narration_err}")
     state.chronicle.append(entry)

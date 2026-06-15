@@ -19,7 +19,7 @@ CRISIS_DEFS = [
     },
     {
         "id": "food_blight",
-        "trigger": lambda s: random.random() < 0.015,
+        "trigger": lambda s: random.random() < 0.006,
         "announcement": "🌱 GREENHOUSE BLIGHT: Fungal infection detected. Food output cut by 40%.",
         "resource_delta": {"food": -12.0},
         "building_effect": ("Greenhouse", "strained"),
@@ -93,6 +93,7 @@ def check_and_fire_crises(state: WorldState) -> list[str]:
                     if b.name == bname:
                         b.status = status
             state.crisis_active = crisis["id"]
+            state.crisis_duration_remaining = 10
             state.event_timeline.append(
                 {
                     "tick": state.tick,
@@ -119,6 +120,7 @@ def inject_manual_crisis(state: WorldState) -> str:
             if b.name == bname:
                 b.status = status
     state.crisis_active = crisis["id"]
+    state.crisis_duration_remaining = 10
     state.event_timeline.append(
         {
             "tick": state.tick,

@@ -172,28 +172,40 @@ window.aubeHideCtrlTip = function() {
 
 (function() {
   var BTN_IDS = ['tick-btn', 'ff-btn', 'ff-year-btn', 'crisis-btn', 'optimism-btn', 'reset-btn'];
+  var _ctrlObserver = null;
+
   function applyCtrlHandlers() {
-    var found = 0;
+    var allBound = true;
     BTN_IDS.forEach(function(id) {
       var wrapper = document.getElementById(id);
-      if (wrapper) {
-        var btn = wrapper.querySelector('button');
-        if (btn && !btn._aubeCtrlBound) {
-          btn._aubeCtrlBound = true;
-          btn.removeAttribute('title');
-          btn.addEventListener('mouseenter', function(e) { window.aubeShowCtrlTip(e, id); });
-          btn.addEventListener('mouseleave', window.aubeHideCtrlTip);
-          found++;
-        }
-      }
+      if (!wrapper) { allBound = false; return; }
+      if (wrapper._aubeCtrlBound) return;
+      wrapper._aubeCtrlBound = true;
+      wrapper.addEventListener('mouseenter', function(e) { window.aubeShowCtrlTip(e, id); });
+      wrapper.addEventListener('mouseleave', window.aubeHideCtrlTip);
     });
-    return found;
+    // Disconnect observer once all buttons are bound
+    if (allBound && _ctrlObserver) {
+      _ctrlObserver.disconnect();
+      _ctrlObserver = null;
+    }
+    return allBound;
   }
-  function retryCtrl(n) {
-    if (n <= 0) return;
-    if (applyCtrlHandlers() < BTN_IDS.length) setTimeout(function() { retryCtrl(n - 1); }, 600);
+
+  function startObserver() {
+    if (applyCtrlHandlers()) return; // already done
+    _ctrlObserver = new MutationObserver(applyCtrlHandlers);
+    _ctrlObserver.observe(document.body, { childList: true, subtree: true });
   }
-  window.addEventListener('load', function() { retryCtrl(12); });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startObserver);
+  } else {
+    startObserver();
+  }
+
+  // Belt-and-suspenders: retry at fixed delays too
+  [500, 1500, 3000, 6000].forEach(function(d) { setTimeout(applyCtrlHandlers, d); });
 })();
 
 window.aubeMapEnter = function(outer) {
@@ -492,10 +504,10 @@ async def on_optimism(feed_html: list[str]) -> tuple:
 async def on_fast_forward_year(feed_html: list[str]) -> tuple:
     """Fast-forward a full colony year (52 weeks) with random crises/breakthroughs injected."""
     weeks_in_year = 52
-    # Schedule 1-3 crises and 0-2 breakthroughs at random weeks during the year
-    crisis_weeks = set(random.sample(range(weeks_in_year), k=random.randint(1, 3)))
+    # Schedule 0-1 crises and 1-2 breakthroughs at random weeks during the year
+    crisis_weeks = set(random.sample(range(weeks_in_year), k=random.randint(0, 1)))
     breakthrough_weeks = set(
-        random.sample(range(weeks_in_year), k=random.randint(0, 2))
+        random.sample(range(weeks_in_year), k=random.randint(1, 2))
     )
 
     for week in range(weeks_in_year):

@@ -43,6 +43,7 @@ class WorldState:
     chronicle: list = field(default_factory=list)
     breakthroughs: list = field(default_factory=list)
     crisis_active: str | None = None
+    crisis_duration_remaining: int = 0
     optimism_active: bool = False
     previous_cultural_top_trait: str | None = None  # for generational drift detection
     year_had_crisis: bool = False  # for "first peaceful year" milestone

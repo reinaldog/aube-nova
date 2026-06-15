@@ -35,7 +35,7 @@ def render_hud(state: WorldState) -> str:
           <div style="display:flex;justify-content:space-between;
                       font-family:'Space Mono',monospace;font-size:10px;
                       color:#ffffff !important;margin-bottom:4px">
-            <span>{icon} {res.upper()}</span>
+            <span style="color:#ffffff !important">{icon} {res.upper()}</span>
             <span style="color:{color} !important;font-weight:700">{val:.0f}%</span>
           </div>
           <div style="background:#101620;border-radius:3px;height:6px;overflow:hidden">
@@ -66,7 +66,7 @@ def render_hud(state: WorldState) -> str:
               <div style="display:flex;justify-content:space-between;
                           font-family:'Space Mono',monospace;font-size:8px;color:#ffffff !important;
                                                     margin-bottom:2px">
-                <span>{trait}</span><span>{actual_pct}%</span>
+                <span style="color:#ffffff !important">{trait}</span><span style="color:#ffffff !important">{actual_pct}%</span>
               </div>
               <div style="background:#0c1018;border-radius:1px;height:3px">
                 <div style="width:{bar_w}%;height:3px;background:{bc};border-radius:1px;
@@ -215,7 +215,9 @@ def render_colonist_profile(
             bc = dna_colors[i % len(dna_colors)]
             has_trait = trait in colonist.traits
             label_style = (
-                f"color:{bc};font-weight:700" if has_trait else "color:#7a9ab0"
+                f"color:{bc} !important;font-weight:700"
+                if has_trait
+                else "color:#ffffff !important"
             )
             bar_style = (
                 f"background:{bc};box-shadow:0 0 6px {bc}88"
@@ -228,7 +230,7 @@ def render_colonist_profile(
                 f'<div style="display:flex;justify-content:space-between;'
                 f"font-family:'Space Mono',monospace;font-size:8px;{label_style};"
                 f'margin-bottom:2px">'
-                f"<span>{trait}{marker}</span><span>{actual_pct}%</span>"
+                f'<span style="color:inherit !important">{trait}{marker}</span><span style="color:inherit !important">{actual_pct}%</span>'
                 f"</div>"
                 f'<div style="background:#0c1018;border-radius:1px;height:3px">'
                 f'<div style="width:{w}%;height:3px;{bar_style};border-radius:1px"></div>'
