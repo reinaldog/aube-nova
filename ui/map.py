@@ -468,8 +468,6 @@ def _colonist_tokens(state: WorldState, selected_id: str | None) -> str:
             f'<rect x="5" y="-24" width="16" height="8" rx="2" fill="{accent}" opacity="0.95"/>'
             f'<text x="13" y="-18" font-family="Space Mono,monospace" font-size="5.5" '
             f'text-anchor="middle" fill="black" font-weight="bold">{job_abbr}</text>'
-            # tooltip (native SVG, also visible as browser tooltip)
-            f"<title>{c.name} · {c.job.upper()} · HP:{c.health:.0f}% · MRL:{c.morale:.0f}%</title>"
             f"</g>"  # animation group
             f"</g>"  # translate / zoom-target group
             f"</g>"  # click group

@@ -361,9 +361,8 @@ def _build_ui(feed_html: list[str]) -> tuple:
     return (
         render_map(_state, _selected_colonist_id),
         render_roster(_state.population, _selected_colonist_id),
-        _profile_html,  # profile_left_out
         render_hud(_state),
-        _profile_html,  # profile_out (same content)
+        _profile_html,
         _render_feed(feed_html),
         render_all_chronicles(_state.chronicle),
         feed_html,
@@ -711,7 +710,6 @@ with gr.Blocks(title="Aube Nova") as demo:
         with gr.Column(scale=6, elem_id="col-map"):
             map_out = gr.HTML(label="COLONY MAP")
             roster_out = gr.HTML(label="COLONISTS")
-            profile_left_out = gr.HTML()
 
         # Middle: tabbed feed / chronicle / analytics
         with gr.Column(scale=5, elem_id="col-feed"):
@@ -753,7 +751,6 @@ with gr.Blocks(title="Aube Nova") as demo:
     ALL_OUT = [
         map_out,
         roster_out,
-        profile_left_out,  # NEW
         hud_out,
         profile_out,
         feed_out,

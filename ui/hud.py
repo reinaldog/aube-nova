@@ -119,14 +119,7 @@ def render_colonist_profile(
 ) -> str:
     """Full profile panel shown in the right column when a colonist is selected."""
     if colonist is None:
-        return (
-            "<div style=\"padding:20px;color:#7aaabb;font-family:'Space Mono',monospace;"
-            "font-size:10px;text-align:center;background:#080d18;border-radius:8px;"
-            'border:1px solid #1a2030;height:100%">'
-            '<div style="margin-top:30px;letter-spacing:2px">&#8592; CLICK A COLONIST</div>'
-            '<div style="margin-top:8px;font-size:8px;color:#5a7a8a">on the map or roster to view their profile</div>'
-            "</div>"
-        )
+        return ""
 
     _, accent, _ = JOB_COLORS.get(colonist.job, ("#0a0a1a", "#00ff9d", "COL"))
     portrait_large = render_portrait(colonist, selected=True)
