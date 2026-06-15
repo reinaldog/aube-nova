@@ -15,6 +15,8 @@ tags:
   - generative-ai
   - text-generation
   - small-language-model
+  - build-small-hackathon
+  - thousand-token-wood
 models:
   - openbmb/MiniCPM4.1-8B
   - openbmb/VoxCPM2
@@ -31,6 +33,27 @@ models:
 [![Python](https://img.shields.io/badge/Python-3.11+-green)](https://python.org)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 [![Hackathon](https://img.shields.io/badge/🏆%20Build%20Small%20Hackathon-2026-orange)](https://huggingface.co/build-small-hackathon)
+[![Demo](https://img.shields.io/badge/🎬%20Demo%20Video-Watch-red)](https://YOUR_VIDEO_LINK_HERE)
+
+---
+
+## 🎬 Demo
+
+> **[▶ Watch the demo video](https://YOUR_VIDEO_LINK_HERE)**
+
+---
+
+## 🌐 Social
+
+> **[📣 LinkedIn post about this build](https://YOUR_LINKEDIN_POST_URL_HERE)**
+
+---
+
+## 👥 Team
+
+| Name | Hugging Face |
+|------|--------------|
+| Reinaldo | [@YOUR_HF_USERNAME](https://huggingface.co/YOUR_HF_USERNAME) |
 
 ---
 
