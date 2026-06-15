@@ -39,13 +39,13 @@ models:
 
 ## 🎬 Demo
 
-> **[▶ Watch the demo video](https://YOUR_VIDEO_LINK_HERE)**
+> **[▶ Watch the demo video](https://www.youtube.com/watch?v=encFNZv0uVU)**
 
 ---
 
 ## 🌐 Social
 
-> **[📣 LinkedIn post about this build](https://YOUR_LINKEDIN_POST_URL_HERE)**
+> **[📣 LinkedIn post about this build](https://www.linkedin.com/feed/update/urn:li:activity:7472435029697282048/)**
 
 ---
 
@@ -53,7 +53,7 @@ models:
 
 | Name | Hugging Face |
 |------|--------------|
-| Reinaldo | [@YOUR_HF_USERNAME](https://huggingface.co/YOUR_HF_USERNAME) |
+| Reinaldo | [reinaldog](https://huggingface.co/reinaldog) |
 
 ---
 
