@@ -33,7 +33,7 @@ models:
 [![Python](https://img.shields.io/badge/Python-3.11+-green)](https://python.org)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 [![Hackathon](https://img.shields.io/badge/🏆%20Build%20Small%20Hackathon-2026-orange)](https://huggingface.co/build-small-hackathon)
-[![Demo](https://img.shields.io/badge/🎬%20Demo%20Video-Watch-red)](https://YOUR_VIDEO_LINK_HERE)
+[![Demo](https://img.shields.io/badge/🎬%20Demo%20Video-Watch-red)](https://www.youtube.com/watch?v=encFNZv0uVU)
 
 ---
 
