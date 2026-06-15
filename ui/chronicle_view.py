@@ -21,10 +21,11 @@ _MILESTONE_META: dict[str, tuple[str, str, str]] = {
 def _audio_tag(audio_path: str | None) -> str:
     if not audio_path:
         return ""
+    # Gradio 5+ serves files at /gradio_api/file=<absolute-path>
     return (
         f'<audio controls style="width:100%;margin-top:12px;height:28px;'
         f'border-radius:4px;filter:invert(0.85) hue-rotate(180deg)"'
-        f' src="/file={audio_path}"></audio>'
+        f' src="/gradio_api/file={audio_path}"></audio>'
     )
 
 

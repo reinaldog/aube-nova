@@ -34,9 +34,9 @@ def render_hud(state: WorldState) -> str:
         <div style="margin:9px 0">
           <div style="display:flex;justify-content:space-between;
                       font-family:'Space Mono',monospace;font-size:10px;
-                      color:#ffffff;margin-bottom:4px">
+                      color:#ffffff !important;margin-bottom:4px">
             <span>{icon} {res.upper()}</span>
-            <span style="color:{color};font-weight:700">{val:.0f}%</span>
+            <span style="color:{color} !important;font-weight:700">{val:.0f}%</span>
           </div>
           <div style="background:#101620;border-radius:3px;height:6px;overflow:hidden">
             <div style="width:{pct}%;height:6px;background:{color};
@@ -51,7 +51,7 @@ def render_hud(state: WorldState) -> str:
     if profile:
         profile_html = (
             '<div style="margin-top:14px;border-top:1px solid #1a2030;padding-top:12px">'
-            "<div style=\"font-family:'Space Mono',monospace;font-size:8px;color:#8ab4c8;"
+            "<div style=\"font-family:'Space Mono',monospace;font-size:8px;color:#8ab4c8 !important;"
             'letter-spacing:2px;margin-bottom:8px">CULTURAL DNA</div>'
         )
         colors = ["#4488ff", "#cc44ff", "#ff8844", "#44cc66", "#ff4466", "#ffe066"]
@@ -64,7 +64,7 @@ def render_hud(state: WorldState) -> str:
             profile_html += f"""
             <div style="margin:4px 0">
               <div style="display:flex;justify-content:space-between;
-                          font-family:'Space Mono',monospace;font-size:8px;color:#ffffff;
+                          font-family:'Space Mono',monospace;font-size:8px;color:#ffffff !important;
                                                     margin-bottom:2px">
                 <span>{trait}</span><span>{actual_pct}%</span>
               </div>
@@ -91,7 +91,7 @@ def render_hud(state: WorldState) -> str:
     if state.breakthroughs:
         bt_html = (
             '<div style="margin-top:12px;border-top:1px solid #1a2030;padding-top:10px">'
-            "<div style=\"font-family:'Space Mono',monospace;font-size:8px;color:#8ab4c8;"
+            "<div style=\"font-family:'Space Mono',monospace;font-size:8px;color:#8ab4c8 !important;"
             'letter-spacing:2px;margin-bottom:6px">DISCOVERIES</div>'
         )
         for bt in state.breakthroughs:

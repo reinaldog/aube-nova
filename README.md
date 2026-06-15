@@ -30,7 +30,7 @@ models:
 [![Model](https://img.shields.io/badge/🧠%20Model-MiniCPM4.1--8B-purple)](https://huggingface.co/openbmb/MiniCPM4.1-8B)
 [![Python](https://img.shields.io/badge/Python-3.11+-green)](https://python.org)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
-[![Hackathon](https://img.shields.io/badge/🏆%20Build%20Small%20Hackathon-2025-orange)](https://huggingface.co/build-small-hackathon)
+[![Hackathon](https://img.shields.io/badge/🏆%20Build%20Small%20Hackathon-2026-orange)](https://huggingface.co/build-small-hackathon)
 
 ---
 
