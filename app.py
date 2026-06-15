@@ -7,6 +7,7 @@ scrollable event feed, and LLM-generated narrative.
 import asyncio
 import random
 from collections import Counter
+from pathlib import Path
 
 import gradio as gr
 
@@ -203,7 +204,7 @@ def _event_html(event: str, year: float) -> str:
     elif "🌊" in event:
         color, border = "#aa66ff", "#8844cc"
     else:
-        color, border = "#6688aa", "#334455"
+        color, border = "#dbdbdf", "#334455"
 
     return (
         f'<div style="border-left:2px solid {border};padding:4px 9px;margin:3px 0;'
@@ -623,11 +624,44 @@ label, .label-wrap span {
 ::-webkit-scrollbar-thumb { background: #1e3040; border-radius: 2px; }
 ::-webkit-scrollbar-thumb:hover { background: #2a4a5e; }
 
-/* ── Controls row ─────────────────────────────────────────────────────────── */
-#controls-row { padding: 8px 0 4px !important; gap: 8px !important; }
+/* ── SVG simulation controls panel ───────────────────────────────────────── */
+.aube-ctrl {
+  text-align: center;
+  cursor: pointer;
+  padding: 8px 10px;
+  border-radius: 5px;
+  border: 1px solid #1a2a3a;
+  background: #080d18;
+  min-width: 56px;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+.aube-ctrl:hover {
+  background: #0d1828 !important;
+  border-color: #2a4a5a !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.55);
+}
+.aube-ctrl:hover svg { filter: brightness(1.45); }
+.aube-ctrl-lbl {
+  font-family: 'Space Mono', monospace;
+  font-size: 6px;
+  letter-spacing: 1.5px;
+  margin-top: 5px;
+}
+/* Hidden Gradio buttons kept in DOM for JS click delegation */
+#hidden-ctrl-row {
+  height: 0 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+}
 
 /* ── Ensure HTML content inherits dark-theme colour ──────────────────────── */
-.prose, .prose p { color: var(--text) !important; }
+/*.prose, .prose p { color: var(--text) !important; } */
+.prose, .prose p { color: #dbdbdf !important; }
 
 /* ── Title sunshine animation ─────────────────────────────────────────────── */
 @keyframes sunshine-sweep {
@@ -693,10 +727,82 @@ TITLE_HTML = """
   </div>
 </div>"""
 
-CONTROLS_LABEL = """
-<div style="font-family:'Space Mono',monospace;font-size:8px;color:#3a6a8a;
-            letter-spacing:2px;margin-bottom:6px;text-align:center">
-  ─────────────────────── SIMULATION CONTROLS ───────────────────────
+SVG_CONTROLS_HTML = """
+<div style="background:#060b14;border:1px solid #1a2030;border-radius:6px;margin-top:4px">
+  <div style="font-family:'Space Mono',monospace;font-size:7px;color:#3a6a8a;
+              letter-spacing:2px;text-align:center;padding:8px 0 4px">SIMULATION CONTROLS</div>
+  <div style="display:flex;justify-content:space-around;align-items:flex-start;
+              padding:6px 8px 10px;gap:4px">
+
+    <div class="aube-ctrl" title="Advance simulation by 1 week"
+         onclick="var b=document.querySelector('#tick-btn button');if(b)b.click()">
+      <svg viewBox="0 0 24 24" width="28" height="28" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="5,3 19,12 5,21" fill="#00cc88"/>
+        <rect x="20" y="3" width="3" height="18" rx="1.5" fill="#00cc88"/>
+      </svg>
+      <div class="aube-ctrl-lbl" style="color:#00cc88">WEEK</div>
+    </div>
+
+    <div class="aube-ctrl" title="Fast-forward 10 weeks"
+         onclick="var b=document.querySelector('#ff-btn button');if(b)b.click()">
+      <svg viewBox="0 0 24 24" width="28" height="28" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="2,3 10,12 2,21" fill="#00cc88"/>
+        <polygon points="11,3 19,12 11,21" fill="#00cc88"/>
+        <rect x="20" y="3" width="3" height="18" rx="1.5" fill="#00cc88"/>
+      </svg>
+      <div class="aube-ctrl-lbl" style="color:#00cc88">&times;10 WKS</div>
+    </div>
+
+    <div class="aube-ctrl" title="Fast-forward 1 full colony year (52 weeks)"
+         onclick="var b=document.querySelector('#ff-year-btn button');if(b)b.click()">
+      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2" y="4" width="20" height="17" rx="2" stroke="#00cc88" stroke-width="1.8"/>
+        <line x1="2" y1="9" x2="22" y2="9" stroke="#00cc88" stroke-width="1.8"/>
+        <line x1="7" y1="2" x2="7" y2="6" stroke="#00cc88" stroke-width="2" stroke-linecap="round"/>
+        <line x1="17" y1="2" x2="17" y2="6" stroke="#00cc88" stroke-width="2" stroke-linecap="round"/>
+        <polygon points="9,13 15,16.5 9,20" fill="#00cc88"/>
+      </svg>
+      <div class="aube-ctrl-lbl" style="color:#00cc88">YEAR</div>
+    </div>
+
+    <div style="width:1px;background:#1a2030;align-self:stretch;margin:0 2px"></div>
+
+    <div class="aube-ctrl" title="Inject a random crisis event"
+         onclick="var b=document.querySelector('#crisis-btn button');if(b)b.click()">
+      <svg viewBox="0 0 24 24" width="28" height="28" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="13,1 3,14 12,14 11,23 22,10 13,10" fill="#ff4466"/>
+      </svg>
+      <div class="aube-ctrl-lbl" style="color:#ff4466">CRISIS</div>
+    </div>
+
+    <div class="aube-ctrl" title="Inject a breakthrough / optimism boost"
+         onclick="var b=document.querySelector('#optimism-btn button');if(b)b.click()">
+      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12" cy="8.5" r="4.5" stroke="#ffe066" stroke-width="1.8"/>
+        <line x1="12" y1="13.5" x2="12" y2="16.5" stroke="#ffe066" stroke-width="1.8" stroke-linecap="round"/>
+        <line x1="9.5" y1="16" x2="14.5" y2="16" stroke="#ffe066" stroke-width="1.8" stroke-linecap="round"/>
+        <line x1="9.5" y1="18.5" x2="14.5" y2="18.5" stroke="#ffe066" stroke-width="1.8" stroke-linecap="round"/>
+        <line x1="12" y1="1" x2="12" y2="2.5" stroke="#ffe066" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="18.5" y1="3.5" x2="17.4" y2="4.6" stroke="#ffe066" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="21" y1="8.5" x2="19.5" y2="8.5" stroke="#ffe066" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="4.5" y1="8.5" x2="3" y2="8.5" stroke="#ffe066" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="5.5" y1="3.5" x2="6.6" y2="4.6" stroke="#ffe066" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <div class="aube-ctrl-lbl" style="color:#ffe066">BOOST</div>
+    </div>
+
+    <div class="aube-ctrl" title="Reset and start a new colony"
+         onclick="var b=document.querySelector('#reset-btn button');if(b)b.click()">
+      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#4a7a9b"
+           stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+           xmlns="http://www.w3.org/2000/svg">
+        <polyline points="1,4 1,10 7,10"/>
+        <path d="M3.51,15 a9,9 0 1,0 0.49,-4.95"/>
+      </svg>
+      <div class="aube-ctrl-lbl" style="color:#4a7a9b">RESET</div>
+    </div>
+
+  </div>
 </div>"""
 
 # ─── Build the Gradio app ──────────────────────────────────────────────────────
@@ -712,7 +818,7 @@ with gr.Blocks(title="Aube Nova") as demo:
             roster_out = gr.HTML(label="COLONISTS")
 
         # Middle: tabbed feed / chronicle / analytics
-        with gr.Column(scale=5, elem_id="col-feed"):
+        with gr.Column(scale=4, elem_id="col-feed"):
             with gr.Tabs(elem_id="main-tabs"):
                 with gr.Tab("📡  EVENTS"):
                     feed_out = gr.HTML()
@@ -723,6 +829,8 @@ with gr.Blocks(title="Aube Nova") as demo:
                     resource_plot = gr.Plot(label="Resource Trends")
                     population_plot = gr.Plot(label="Population by Generation")
                     drift_plot = gr.Plot(label="Cultural Trait Drift")
+            # SVG icon control panel sits below the tabs in the middle column
+            gr.HTML(SVG_CONTROLS_HTML)
 
         # Right: compact status + colonist profile
         with gr.Column(scale=3, elem_id="col-status"):
@@ -730,15 +838,24 @@ with gr.Blocks(title="Aube Nova") as demo:
             hud_out = gr.HTML(label="COLONY STATUS")
             profile_out = gr.HTML(label="COLONIST PROFILE")
 
-    # ── Controls ───────────────────────────────────────────────────────────────
-    gr.HTML(CONTROLS_LABEL)
-    with gr.Row(elem_id="controls-row"):
-        tick_btn = gr.Button("▶ ADVANCE WEEK", variant="primary", scale=2)
-        ff_btn = gr.Button("⏩ FF 10 WEEKS", variant="primary", scale=2)
-        ff_year_btn = gr.Button("🗓️ FF 1 YEAR", variant="primary", scale=2)
-        crisis_btn = gr.Button("💥 INJECT CRISIS", variant="stop", scale=1)
-        optimism_btn = gr.Button("💡 BREAKTHROUGH", variant="secondary", scale=2)
-        reset_btn = gr.Button("↺ NEW COLONY", scale=1)
+    # ── Hidden Gradio buttons (kept in DOM for JS click delegation from SVG panel) ─
+    with gr.Row(elem_id="hidden-ctrl-row"):
+        tick_btn = gr.Button(
+            "▶ ADVANCE WEEK", variant="primary", scale=2, elem_id="tick-btn"
+        )
+        ff_btn = gr.Button(
+            "⏩ FF 10 WEEKS", variant="primary", scale=2, elem_id="ff-btn"
+        )
+        ff_year_btn = gr.Button(
+            "🗓️ FF 1 YEAR", variant="primary", scale=2, elem_id="ff-year-btn"
+        )
+        crisis_btn = gr.Button(
+            "💥 INJECT CRISIS", variant="stop", scale=1, elem_id="crisis-btn"
+        )
+        optimism_btn = gr.Button(
+            "💡 BREAKTHROUGH", variant="secondary", scale=2, elem_id="optimism-btn"
+        )
+        reset_btn = gr.Button("↺ NEW COLONY", scale=1, elem_id="reset-btn")
 
     # ── Hidden colonist selector textbox (JS → Python bridge) ─────────────────
     colonist_tb = gr.Textbox(
@@ -791,4 +908,5 @@ with gr.Blocks(title="Aube Nova") as demo:
         outputs=[resource_plot, population_plot, drift_plot],
     )
 
-demo.launch(css=CSS)
+_AUDIO_CACHE_PATH = str(Path(__file__).parent / "audio_cache")
+demo.launch(css=CSS, allowed_paths=[_AUDIO_CACHE_PATH])

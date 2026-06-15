@@ -34,7 +34,7 @@ def render_hud(state: WorldState) -> str:
         <div style="margin:9px 0">
           <div style="display:flex;justify-content:space-between;
                       font-family:'Space Mono',monospace;font-size:10px;
-                      color:#8ab4c8;margin-bottom:4px">
+                      color:#ffffff;margin-bottom:4px">
             <span>{icon} {res.upper()}</span>
             <span style="color:{color};font-weight:700">{val:.0f}%</span>
           </div>
@@ -64,7 +64,7 @@ def render_hud(state: WorldState) -> str:
             profile_html += f"""
             <div style="margin:4px 0">
               <div style="display:flex;justify-content:space-between;
-                          font-family:'Space Mono',monospace;font-size:8px;color:#aac8d8;
+                          font-family:'Space Mono',monospace;font-size:8px;color:#ffffff;
                                                     margin-bottom:2px">
                 <span>{trait}</span><span>{actual_pct}%</span>
               </div>

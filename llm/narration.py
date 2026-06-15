@@ -16,7 +16,8 @@ _IS_HF_SPACE = bool(os.environ.get("SPACE_ID"))
 
 logger = logging.getLogger(__name__)
 
-AUDIO_CACHE_DIR = Path("audio_cache")
+# Use absolute path so Gradio's /file= endpoint can serve these files reliably
+AUDIO_CACHE_DIR = Path(__file__).parent.parent / "audio_cache"
 AUDIO_CACHE_DIR.mkdir(exist_ok=True)
 
 NARRATOR_VOICE_DESCRIPTION = (
